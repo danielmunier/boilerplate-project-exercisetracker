@@ -32,6 +32,10 @@ const getUser = async (username) => {
 
 }
 
+const getExercises = async (user) => {
+
+}
+
 
 const getUserById = async (id) => {
   const userFound = await userCollection.findOne({
@@ -87,27 +91,6 @@ app.get("/api/users", async function(req, res) {
 
 })
 
-
-/* app.get("/api/users/:username?", async function(req, res) {
-  console.log('Query by username')
-  const username = req.params.username
-
-  const user = await getUser(username)
-
-  if(user) {
-    return res.json({
-      username: user.username,
-      _id: user._id
-    })
-  } else {
-    return res.json({
-      error: "User not found"
-    })
-  }
-
-} )
-
- */
 
 
 app.post("/api/users/:_id/exercises/", async function(req, res) {
@@ -168,6 +151,34 @@ if(userFound) {
  }
 })
 
+
+
+app.get("/api/users/:_id/exercises/", async function(req, res) {
+  try {
+ 
+   const id = req.params._id
+   const userFound = await getUserById(id)
+   console.log(userFound)
+
+   if(!userFound) {
+    return res.json("User not found")
+
+   }  
+
+
+
+   return res.send(userFound)
+
+
+
+ 
+ 
+  } catch(e) { 
+   console.error(e)
+   
+ 
+  }
+ })
 
 app.get("/api/users/:_id/logs", async function (req, res) {
   console.log('Query by ID')
