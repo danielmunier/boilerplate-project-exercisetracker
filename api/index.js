@@ -110,7 +110,7 @@ app.get("/api/users", async function(req, res) {
  */
 
 
-app.post("/api/users/:_id/exercices/", async function(req, res) {
+app.post("/api/users/:_id/exercises/", async function(req, res) {
  try {
 
   const id = req.params._id
@@ -145,6 +145,7 @@ if(userFound) {
         "_id": id,
         "username": userFound.username,
         "date": date.toDateString(),
+        "duration": duration,
         "description": description
 
       })
