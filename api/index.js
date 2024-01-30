@@ -1,8 +1,9 @@
 const express = require('express')
-const { client} = require("../database/conect")
+const { client, ObjectId} = require("../database/conect")
 const path = require("path")
 const app = express()
 const cors = require('cors')
+const { ok } = require('assert')
 require('dotenv').config()
 
 app.use(cors())
@@ -15,6 +16,7 @@ app.get('/', (req, res) => {
 
 const db = client.db("exercisetracker")
 const userCollection = db.collection("users")
+const exerciseCollection = db.collection("exercises")
 
 const getUser = async (username) => {
   const userFound = await userCollection.findOne({
@@ -30,10 +32,12 @@ const getUser = async (username) => {
 
 }
 
+
 const getUserById = async (id) => {
-  const userFound = userCollection.findOne({
-    _id: id
+  const userFound = await userCollection.findOne({
+    "_id": new ObjectId(id)
   })
+
 
   if(userFound) {
     return userFound
@@ -41,6 +45,7 @@ const getUserById = async (id) => {
     return false
   }
 }
+
 
 app.post("/api/users/", async function (req, res) {
   const newUser = req.body.username
@@ -76,26 +81,15 @@ app.post("/api/users/", async function (req, res) {
 
 })
 
-app.post("/api/users/:_id/exercises", async function(req, res) {
-  const id = req.body._id
-  const description = req.body.description
-  const duration = parseInt(req.body.duration)
-  const date = req.body.date
-
-  const userFound = await getUserById(id)
-  if(userFound) {
-    // To-do
-
-    
-  } else {
-    return res.json({
-      error: "User not found by the given id"
-    })
-  }
+app.get("/api/users", async function(req, res) {
+  const usersData = await userCollection.find().toArray()
+  res.send(usersData)
 
 })
 
-app.get("/api/users/:username?", async function(req, res) {
+
+/* app.get("/api/users/:username?", async function(req, res) {
+  console.log('Query by username')
   const username = req.params.username
 
   const user = await getUser(username)
@@ -112,6 +106,105 @@ app.get("/api/users/:username?", async function(req, res) {
   }
 
 } )
+
+ */
+
+
+app.post("/api/users/:_id/exercices/", async function(req, res) {
+ try {
+
+  const id = req.params._id
+  const description = req.body.description
+  const duration = parseInt(req.body.duration)
+  console.log(req.body.date)
+  let date;
+  if(req.body.date) {
+      console.log("existe")
+      date = new Date(req.body.date)
+     
+  } else {
+    date = new Date()
+    console.log("Não existe")
+  }
+
+
+const userFound = await getUserById(id)
+  
+if(userFound) {
+
+    exerciseCollection.insertOne({
+      user_id: userFound._id,
+      username: userFound.username,
+      date: date,
+      duration: duration,
+      description: description
+      
+    }).then((exerciseCreated) => {
+      console.log(exerciseCreated)
+      res.json({
+        "_id": id,
+        "username": userFound.username,
+        "date": date.toDateString(),
+        "description": description
+
+      })
+    })
+
+
+
+    
+  } else {
+    return res.json({
+      error: "User not found by the given id"
+    })
+  }
+
+
+ } catch(e) { 
+  console.error(e)
+  
+
+ }
+})
+
+
+app.get("/api/users/:_id/logs", async function (req, res) {
+  console.log('Query by ID')
+  const from = req.params.from
+  const to = req.params.to
+  const limit = req.params.limit  
+  console.log(`${from} to ${to} with limit at ${limit}`)
+
+  const userId = req.params._id
+  const userFound = await getUserById(userId)
+
+  if(userFound) {
+    const exercices = await exerciseCollection.find({
+        "username": userFound.username
+    }).toArray()
+
+   
+    for(let exercice of exercices) {
+        delete exercice._id
+        delete exercice.username
+        delete exercice.user_id
+        exercice.date = exercice.date.toDateString()
+      
+    }
+
+
+    res.json({"_id": userFound._id,
+    "username": userFound.username,
+    "count": exercices.length,
+    "log": exercices
+  })
+    
+  } else {
+    console.log("User not found querying id")
+    res.json({"error": "User not found"})
+  }
+
+})
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {

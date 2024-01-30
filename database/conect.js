@@ -1,4 +1,4 @@
-const { MongoClient } = require("mongodb")
+const { MongoClient, ObjectId} = require("mongodb")
 require("dotenv").config()
 
 if (!process.env.DATABASE_URL) {
@@ -9,5 +9,6 @@ if (!process.env.DATABASE_URL) {
 const client = new MongoClient(process.env.DATABASE_URL)
 
 module.exports = {
-    client
+    client,
+    ObjectId
 }
