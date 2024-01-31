@@ -95,11 +95,9 @@ app.get("/api/users", async function(req, res) {
 
 app.post("/api/users/:_id/exercises/", async function(req, res) {
  try {
-  console.log("Here")
   const id = req.params._id
   const description = req.body.description
   const duration = parseInt(req.body.duration)
-  console.log(req.body.date)
   let date;
   if(req.body.date) {
       console.log("existe")
@@ -158,7 +156,7 @@ app.get("/api/users/:_id/exercises/", async function(req, res) {
  
    const id = req.params._id
    const userFound = await getUserById(id)
-   console.log(userFound)
+
 
    if(!userFound) {
     return res.json("User not found")
@@ -180,54 +178,61 @@ app.get("/api/users/:_id/exercises/", async function(req, res) {
   }
  })
 
-app.get("/api/users/:_id/logs", async function (req, res) {
-  const from = req.query.from
-  const to = req.query.to
-  const limit = req.query.limit  
-  console.log(`${from} to ${to} with limit at ${limit}`)
+ app.get("/api/users/:_id/logs", async function (req, res) {
+  const from = req.query.from;
+  const to = req.query.to;
+  const limit = req.query.limit;
 
-  const fromDate = new Date(from).getTime()
-  const toDate = new Date(to).getTime()
-
-  const userId = req.params._id
-  const userFound = await getUserById(userId)
-
-  if(userFound) {
-    const exercises = await exerciseCollection.find({
-        "username": userFound.username
-    }).toArray()
-
-    const filteredExercises = exercises.filter((exercise) => {
-      const exerciseDate = new Date(exercise.date).getTime();
-      return exerciseDate >= fromDate && exerciseDate <= toDate;
-    });
-
-    filteredExercises.forEach((exercise) => {
-      delete exercise._id
-      delete exercise.user_id
-      delete exercise.username
-      exercise.date = exercise.date.toDateString()
-    })
-
-    if(filteredExercises.length > limit) {
-      filteredExercises.splice(limit, filteredExercises.length - limit)
-    }
-    
+  let fromDate, toDate, limitDate;
 
 
-    res.json({"_id": userFound._id,
-    "username": userFound.username,
-    "count": exercises.length,
-    "log": filteredExercises
-  })
-    
-  } else {
-    console.log("User not found querying id")
-    res.json({"error": "User not found"})
+  if (from) {
+    fromDate = new Date(from).getTime();
   }
 
-})
+  if (to) {
+    toDate = new Date(to).getTime();
+  }
 
+  const userId = req.params._id;
+  const userFound = await getUserById(userId);
+
+  if (userFound) {
+    const exercises = await exerciseCollection.find({
+      "username": userFound.username
+    }).toArray();
+
+    let filteredExercises = exercises;
+
+    if (fromDate || toDate) {
+      filteredExercises = filteredExercises.filter((exercise) => {
+        const exerciseDate = new Date(exercise.date).getTime();
+        return (!fromDate || exerciseDate >= fromDate) && (!toDate || exerciseDate <= toDate);
+      });
+    }
+
+    if (limit && filteredExercises.length > limit) {
+      filteredExercises = filteredExercises.slice(0, limit);
+    }
+
+    filteredExercises.forEach((exercise) => {
+      delete exercise._id;
+      delete exercise.user_id;
+      delete exercise.username;
+      exercise.date = exercise.date.toDateString();
+    });
+
+    res.json({
+      "_id": userFound._id,
+      "username": userFound.username,
+      "count": exercises.length,
+      "log": filteredExercises
+    });
+  } else {
+    console.log("User not found querying id");
+    res.json({"error": "User not found"});
+  }
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port http://localhost:3000')
