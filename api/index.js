@@ -95,7 +95,7 @@ app.get("/api/users", async function(req, res) {
 
 app.post("/api/users/:_id/exercises/", async function(req, res) {
  try {
-
+  console.log("Here")
   const id = req.params._id
   const description = req.body.description
   const duration = parseInt(req.body.duration)
@@ -181,34 +181,43 @@ app.get("/api/users/:_id/exercises/", async function(req, res) {
  })
 
 app.get("/api/users/:_id/logs", async function (req, res) {
-  console.log('Query by ID')
-  const from = req.params.from
-  const to = req.params.to
-  const limit = req.params.limit  
+  const from = req.query.from
+  const to = req.query.to
+  const limit = req.query.limit  
   console.log(`${from} to ${to} with limit at ${limit}`)
+
+  const fromDate = new Date(from).getTime()
+  const toDate = new Date(to).getTime()
 
   const userId = req.params._id
   const userFound = await getUserById(userId)
 
   if(userFound) {
-    const exercices = await exerciseCollection.find({
+    const exercises = await exerciseCollection.find({
         "username": userFound.username
     }).toArray()
 
    
-    for(let exercice of exercices) {
-        delete exercice._id
-        delete exercice.username
-        delete exercice.user_id
-        exercice.date = exercice.date.toDateString()
-      
+    for (let i = exercises.length - 1; i >= 0; i--) {
+      const exercise = exercises[i];
+    
+      delete exercise._id;
+      delete exercise.username;
+      delete exercise.user_id;
+      exercise.date = exercise.date.toDateString();
+      let exerciseDate = new Date(exercise.date).getTime()
+    
+      if (exerciseDate > fromDate && exerciseDate > toDate) {
+        exercises.splice(i, 1);
+      }
+     
     }
 
 
     res.json({"_id": userFound._id,
     "username": userFound.username,
-    "count": exercices.length,
-    "log": exercices
+    "count": exercises.length,
+    "log": exercises
   })
     
   } else {
