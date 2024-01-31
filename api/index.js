@@ -197,27 +197,28 @@ app.get("/api/users/:_id/logs", async function (req, res) {
         "username": userFound.username
     }).toArray()
 
-   
-    for (let i = exercises.length - 1; i >= 0; i--) {
-      const exercise = exercises[i];
-    
-      delete exercise._id;
-      delete exercise.username;
-      delete exercise.user_id;
-      exercise.date = exercise.date.toDateString();
-      let exerciseDate = new Date(exercise.date).getTime()
-    
-      if (exerciseDate > fromDate && exerciseDate > toDate) {
-        exercises.splice(i, 1);
-      }
-     
+    const filteredExercises = exercises.filter((exercise) => {
+      const exerciseDate = new Date(exercise.date).getTime();
+      return exerciseDate >= fromDate && exerciseDate <= toDate;
+    });
+
+    filteredExercises.forEach((exercise) => {
+      delete exercise._id
+      delete exercise.user_id
+      delete exercise.username
+      exercise.date = exercise.date.toDateString()
+    })
+
+    if(filteredExercises.length > limit) {
+      filteredExercises.splice(limit, filteredExercises.length - limit)
     }
+    
 
 
     res.json({"_id": userFound._id,
     "username": userFound.username,
     "count": exercises.length,
-    "log": exercises
+    "log": filteredExercises
   })
     
   } else {
